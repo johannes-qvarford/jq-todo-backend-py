@@ -67,13 +67,16 @@ def find_todo(_id):
 @dataclasses.dataclass
 class Todo:
     title: str
+    order: int | None = None
 
 
 @dataclasses.dataclass
-class CreatedTodo(Todo):
+class CreatedTodo:
+    title: str
     id: uuid.UUID = dataclasses.field(compare=False)
-    completed: bool = False
     url: str = dataclasses.field(init=False, compare=False)
+    completed: bool = False
+    order: int | None = None
 
     def __post_init__(self):
         self.url = f'http://localhost:5000/{self.id}'

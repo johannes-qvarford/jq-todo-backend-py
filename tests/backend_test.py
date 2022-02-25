@@ -139,7 +139,7 @@ def test_changes_to_todos_are_propagated_to_the_list(client):
 
 
 def test_a_todo_can_be_removed_from_the_list_by_deleting_it(client):
-    todo = Todo(title="title a")
+    todo = Todo(title="a title")
     url = extract_url(post(client, todo))
     client.delete(url)
 
@@ -149,13 +149,22 @@ def test_a_todo_can_be_removed_from_the_list_by_deleting_it(client):
 
 
 def test_a_todo_cannot_be_retrieved_after_deleting_it(client):
-    todo = Todo(title="title a")
+    todo = Todo(title="a title")
     url = extract_url(post(client, todo))
     client.delete(url)
 
     response = client.get(url)
 
     assert response.status_code == 404
+
+
+def test_a_todo_can_have_an_initial_order(client):
+    todo = Todo(title="a title", order=1)
+    url = extract_url(post(client, todo))
+
+    response = client.get(url)
+
+    assert json.loads(response.data)['order'] == 1
 
 
 def post(client, todo):
