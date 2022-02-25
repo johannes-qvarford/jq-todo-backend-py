@@ -1,6 +1,7 @@
 import dataclasses
 import json
 import uuid
+from typing import Dict, List
 
 import flask
 from flask import Flask, Blueprint, request, abort
@@ -111,7 +112,7 @@ class EnhancedJSONEncoder(json.JSONEncoder):
         return super().default(o)
 
 
-todosMap = {}
+todosMap: Dict[Flask, List[CreatedTodo]] = {}
 
 
 def todos() -> list[CreatedTodo]:
