@@ -122,6 +122,22 @@ def test_a_todo_can_be_patched_to_change_its_completeness(client):
     assert json.loads(response.data)['completed']
 
 
+def test_changes_to_todos_are_propagated_to_the_list(client):
+    todo_a = Todo(title="title a")
+    todo_b = Todo(title="title b")
+    todo_changes_a = TodoChanges(title="new title a", completed=True)
+    todo_changes_b = TodoChanges(completed=True)
+    url_a = extract_url(post(client, todo_a))
+    url_b = extract_url(post(client, todo_b))
+    client.patch(url_a, json=todo_changes_a)
+    client.patch(url_b, json=todo_changes_b)
+
+    response = get_all(client)
+
+    assert [(t['title'], t['completed']) for t in json.loads(response.data)] == \
+           [("new title a", True), ("title b", True)]
+
+
 def post(client, todo):
     return client.post("/", json=todo.__dict__)
 
