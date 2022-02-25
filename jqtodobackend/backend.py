@@ -51,6 +51,14 @@ def patch(_id):
     return abort(404)
 
 
+@blueprint.route('/<uuid:_id>', methods=['DELETE'])
+def delete(_id):
+    todo = find_todo(_id)
+    if todo:
+        todos().remove(todo)
+    return ''
+
+
 def find_todo(_id):
     matching_todos = [t for t in todos() if t.id == _id]
     return matching_todos[0] if len(matching_todos) > 0 else None

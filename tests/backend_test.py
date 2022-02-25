@@ -138,6 +138,16 @@ def test_changes_to_todos_are_propagated_to_the_list(client):
            [("new title a", True), ("title b", True)]
 
 
+def test_a_todo_can_be_removed_from_the_list_by_deleting_it(client):
+    todo = Todo(title="title a")
+    url = extract_url(post(client, todo))
+    client.delete(url)
+
+    response = get_all(client)
+
+    assert json.loads(response.data) == []
+
+
 def post(client, todo):
     return client.post("/", json=todo.__dict__)
 
