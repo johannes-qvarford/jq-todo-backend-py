@@ -15,6 +15,47 @@ def create_app():
 blueprint = Blueprint('', __name__)
 
 
+@blueprint.route('/')
+def get_all():
+    ts = todos()
+    return json.dumps([t for t in ts], cls=EnhancedJSONEncoder)
+
+
+@blueprint.route('/', methods=['DELETE'])
+def delete_all():
+    ts = todos()
+    ts.clear()
+    return ''
+
+
+@blueprint.route('/', methods=['POST'])
+def post():
+    ts = todos()
+    todo = CreatedTodo.from_todo(Todo(**request.json))
+    ts.append(todo)
+    return todo.__dict__
+
+
+@blueprint.route('/<uuid:_id>', methods=['GET'])
+def get(_id):
+    todo = find_todo(_id)
+    return todo.__dict__ if todo else abort(404)
+
+
+@blueprint.route('/<uuid:_id>', methods=['PATCH'])
+def patch(_id):
+    todo = find_todo(_id)
+    if todo:
+        todo.apply_changes(TodoChanges(**request.json))
+        return todo.__dict__
+    return abort(404)
+
+
+def find_todo(_id):
+    matching_todos = [t for t in todos() if t.id == _id]
+    return matching_todos[0] if len(matching_todos) > 0 else None
+
+
 @dataclasses.dataclass
 class Todo:
     title: str
@@ -38,6 +79,15 @@ class CreatedTodo(Todo):
     def from_todo(todo):
         return CreatedTodo(id=uuid.uuid4(), **todo.__dict__)
 
+    def apply_changes(self, changes):
+        for k, v in changes.__dict__.items():
+            self.__dict__[k] = v if v else self.__dict__[k]
+
+
+@dataclasses.dataclass
+class TodoChanges:
+    title: str
+
 
 class EnhancedJSONEncoder(json.JSONEncoder):
     def default(self, o):
@@ -51,35 +101,7 @@ class EnhancedJSONEncoder(json.JSONEncoder):
 todosMap = {}
 
 
-def todos():
+def todos() -> list[CreatedTodo]:
     ts = todosMap[flask.current_app] if flask.current_app in todosMap else []
     todosMap[flask.current_app] = ts
     return ts
-
-
-@blueprint.route('/')
-def get_all():
-    ts = todos()
-    return json.dumps([t for t in ts], cls=EnhancedJSONEncoder)
-
-
-@blueprint.route('/', methods=['DELETE'])
-def delete_all():
-    ts = todos()
-    ts.clear()
-    return ''
-
-
-@blueprint.route('/', methods=['POST'])
-def post():
-    ts = todos()
-    todo = CreatedTodo.from_todo(Todo(**request.json))
-    ts.append(todo)
-    return todo.__dict__
-
-
-@blueprint.route('/<uuid:id>', methods=['GET'])
-def get(id):
-    ts = todos()
-    matching_todos = [t for t in ts if t.id == id]
-    return matching_todos[0].__dict__ if len(matching_todos) > 0 else abort(404)

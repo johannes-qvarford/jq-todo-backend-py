@@ -3,7 +3,7 @@ import json
 import pytest
 
 import jqtodobackend.backend as backend
-from jqtodobackend import Todo
+from jqtodobackend import Todo, TodoChanges
 from jqtodobackend import CreatedTodo
 
 
@@ -16,7 +16,11 @@ def app():
 
     # other setup can go here
 
-    yield app
+    try:
+        yield app
+    finally:
+        t = backend.todosMap
+        t and t.clear()
 
     # clean up / reset resources here
 
@@ -94,6 +98,17 @@ def test_a_created_todos_url_is_stored_in_the_list(client):
     response = get_all(client)
 
     assert [t['url'] for t in json.loads(response.data)] == [url]
+
+
+def test_a_todo_can_be_patched_to_change_its_title(client):
+    todo = Todo(title="a title")
+    url = extract_url(post(client, todo))
+    todo_changes = TodoChanges(title="a different title")
+    client.patch(url, json=todo_changes)
+
+    response = client.get(url)
+
+    assert json.loads(response.data)['title'] == "a different title"
 
 
 def post(client, todo):
