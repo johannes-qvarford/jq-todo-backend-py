@@ -10,9 +10,11 @@ from jqtodobackend import CreatedTodo
 @pytest.fixture(autouse=True)
 def app():
     app = backend.create_app()
-    app.config.update({
-        "TESTING": True,
-    })
+    app.config.update(
+        {
+            "TESTING": True,
+        }
+    )
 
     # other setup can go here
 
@@ -45,7 +47,9 @@ def test_to_todos_to_start_with(client):
 def test_a_posted_todo_is_returned(client):
     todo = Todo(title="a title")
     response = post(client, todo)
-    assert CreatedTodo.from_dict(json.loads(response.data)) == CreatedTodo.from_todo(todo)
+    assert CreatedTodo.from_dict(json.loads(response.data)) == CreatedTodo.from_todo(
+        todo
+    )
 
 
 def test_posted_todos_are_added_to_the_list(client):
@@ -56,11 +60,10 @@ def test_posted_todos_are_added_to_the_list(client):
 
     response = get_all(client)
 
-    expected = [
-        CreatedTodo.from_todo(todo_a),
-        CreatedTodo.from_todo(todo_b)
-    ]
-    assert [CreatedTodo.from_dict(item) for item in json.loads(response.data)] == expected
+    expected = [CreatedTodo.from_todo(todo_a), CreatedTodo.from_todo(todo_b)]
+    assert [
+        CreatedTodo.from_dict(item) for item in json.loads(response.data)
+    ] == expected
 
 
 def test_list_is_empty_after_deletion(client):
@@ -79,7 +82,7 @@ def test_list_is_empty_after_deletion(client):
 def test_a_todo_is_initially_not_completed(client):
     todo = Todo(title="a title")
     response = post(client, todo)
-    assert not json.loads(response.data)['completed']
+    assert not json.loads(response.data)["completed"]
 
 
 def test_a_created_todo_has_a_url_to_fetch_itself(client):
@@ -88,7 +91,9 @@ def test_a_created_todo_has_a_url_to_fetch_itself(client):
 
     response = client.get(url)
 
-    assert CreatedTodo.from_dict(json.loads(response.data)) == CreatedTodo.from_todo(todo)
+    assert CreatedTodo.from_dict(json.loads(response.data)) == CreatedTodo.from_todo(
+        todo
+    )
 
 
 def test_a_created_todos_url_is_stored_in_the_list(client):
@@ -97,7 +102,7 @@ def test_a_created_todos_url_is_stored_in_the_list(client):
 
     response = get_all(client)
 
-    assert [t['url'] for t in json.loads(response.data)] == [url]
+    assert [t["url"] for t in json.loads(response.data)] == [url]
 
 
 def test_a_todo_can_be_patched_to_change_its_title(client):
@@ -108,7 +113,7 @@ def test_a_todo_can_be_patched_to_change_its_title(client):
 
     response = client.get(url)
 
-    assert json.loads(response.data)['title'] == "a different title"
+    assert json.loads(response.data)["title"] == "a different title"
 
 
 def test_a_todo_can_be_patched_to_change_its_completeness(client):
@@ -119,7 +124,7 @@ def test_a_todo_can_be_patched_to_change_its_completeness(client):
 
     response = client.get(url)
 
-    assert json.loads(response.data)['completed']
+    assert json.loads(response.data)["completed"]
 
 
 def test_changes_to_todos_are_propagated_to_the_list(client):
@@ -134,8 +139,10 @@ def test_changes_to_todos_are_propagated_to_the_list(client):
 
     response = get_all(client)
 
-    assert [(t['title'], t['completed']) for t in json.loads(response.data)] == \
-           [("new title a", True), ("title b", True)]
+    assert [(t["title"], t["completed"]) for t in json.loads(response.data)] == [
+        ("new title a", True),
+        ("title b", True),
+    ]
 
 
 def test_a_todo_can_be_removed_from_the_list_by_deleting_it(client):
@@ -164,7 +171,7 @@ def test_a_todo_can_have_an_initial_order(client):
 
     response = client.get(url)
 
-    assert json.loads(response.data)['order'] == 1
+    assert json.loads(response.data)["order"] == 1
 
 
 def test_a_todo_change_be_patched_to_change_its_order(client):
@@ -174,7 +181,7 @@ def test_a_todo_change_be_patched_to_change_its_order(client):
 
     response = client.get(url)
 
-    assert json.loads(response.data)['order'] == 2
+    assert json.loads(response.data)["order"] == 2
 
 
 def post(client, todo):
@@ -186,4 +193,4 @@ def get_all(client):
 
 
 def extract_url(response):
-    return json.loads(response.data)['url']
+    return json.loads(response.data)["url"]

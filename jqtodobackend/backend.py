@@ -12,23 +12,23 @@ def create_app():
     return app
 
 
-blueprint = Blueprint('', __name__)
+blueprint = Blueprint("", __name__)
 
 
-@blueprint.route('/')
+@blueprint.route("/")
 def get_all():
     ts = todos()
     return json.dumps([t for t in ts], cls=EnhancedJSONEncoder)
 
 
-@blueprint.route('/', methods=['DELETE'])
+@blueprint.route("/", methods=["DELETE"])
 def delete_all():
     ts = todos()
     ts.clear()
-    return ''
+    return ""
 
 
-@blueprint.route('/', methods=['POST'])
+@blueprint.route("/", methods=["POST"])
 def post():
     ts = todos()
     todo = CreatedTodo.from_todo(Todo(**request.json))
@@ -36,13 +36,13 @@ def post():
     return todo.__dict__
 
 
-@blueprint.route('/<uuid:_id>', methods=['GET'])
+@blueprint.route("/<uuid:_id>", methods=["GET"])
 def get(_id):
     todo = find_todo(_id)
     return todo.__dict__ if todo else abort(404)
 
 
-@blueprint.route('/<uuid:_id>', methods=['PATCH'])
+@blueprint.route("/<uuid:_id>", methods=["PATCH"])
 def patch(_id):
     todo = find_todo(_id)
     if todo:
@@ -51,12 +51,12 @@ def patch(_id):
     return abort(404)
 
 
-@blueprint.route('/<uuid:_id>', methods=['DELETE'])
+@blueprint.route("/<uuid:_id>", methods=["DELETE"])
 def delete(_id):
     todo = find_todo(_id)
     if todo:
         todos().remove(todo)
-    return ''
+    return ""
 
 
 def find_todo(_id):
@@ -79,11 +79,11 @@ class CreatedTodo:
     order: int | None = None
 
     def __post_init__(self):
-        self.url = f'http://localhost:5000/{self.id}'
+        self.url = f"http://localhost:5000/{self.id}"
 
     @staticmethod
     def from_dict(d):
-        no_generated_fields = {k: v for k, v in d.items() if k not in ['url']}
+        no_generated_fields = {k: v for k, v in d.items() if k not in ["url"]}
         return CreatedTodo(**no_generated_fields)
 
     @staticmethod
