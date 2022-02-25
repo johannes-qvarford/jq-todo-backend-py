@@ -167,6 +167,16 @@ def test_a_todo_can_have_an_initial_order(client):
     assert json.loads(response.data)['order'] == 1
 
 
+def test_a_todo_change_be_patched_to_change_its_order(client):
+    todo = Todo(title="a title", order=1)
+    url = extract_url(post(client, todo))
+    client.patch(url, json=TodoChanges(order=2))
+
+    response = client.get(url)
+
+    assert json.loads(response.data)['order'] == 2
+
+
 def post(client, todo):
     return client.post("/", json=todo.__dict__)
 

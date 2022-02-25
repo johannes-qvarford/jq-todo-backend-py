@@ -99,6 +99,7 @@ class CreatedTodo:
 class TodoChanges:
     title: str | None = None
     completed: bool | None = None
+    order: int | None = None
 
 
 class EnhancedJSONEncoder(json.JSONEncoder):
