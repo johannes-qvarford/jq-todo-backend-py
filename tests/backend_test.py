@@ -87,6 +87,15 @@ def test_a_created_todo_has_a_url_to_fetch_itself(client):
     assert CreatedTodo.from_dict(json.loads(response.data)) == CreatedTodo.from_todo(todo)
 
 
+def test_a_created_todos_url_is_stored_in_the_list(client):
+    todo = Todo(title="a title")
+    url = extract_url(post(client, todo))
+
+    response = get_all(client)
+
+    assert [t['url'] for t in json.loads(response.data)] == [url]
+
+
 def post(client, todo):
     return client.post("/", json=todo.__dict__)
 
