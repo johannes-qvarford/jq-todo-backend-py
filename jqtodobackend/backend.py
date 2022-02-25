@@ -86,7 +86,8 @@ class CreatedTodo(Todo):
 
 @dataclasses.dataclass
 class TodoChanges:
-    title: str
+    title: str | None = None
+    completed: bool | None = None
 
 
 class EnhancedJSONEncoder(json.JSONEncoder):

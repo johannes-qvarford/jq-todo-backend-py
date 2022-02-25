@@ -111,6 +111,17 @@ def test_a_todo_can_be_patched_to_change_its_title(client):
     assert json.loads(response.data)['title'] == "a different title"
 
 
+def test_a_todo_can_be_patched_to_change_its_completeness(client):
+    todo = Todo(title="a title")
+    url = extract_url(post(client, todo))
+    todo_changes = TodoChanges(completed=True)
+    client.patch(url, json=todo_changes)
+
+    response = client.get(url)
+
+    assert json.loads(response.data)['completed']
+
+
 def post(client, todo):
     return client.post("/", json=todo.__dict__)
 
