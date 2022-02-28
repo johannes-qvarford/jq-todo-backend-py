@@ -1,85 +1,26 @@
 import dataclasses
 import json
 import uuid
-from typing import Dict, List
+from typing import Optional
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
-import flask
-from flask import Flask, Blueprint, request, abort
-
-
-def create_app():
-    app = Flask(__name__)
-    app.register_blueprint(blueprint)
-    return app
+app = FastAPI()
 
 
-blueprint = Blueprint("", __name__)
-
-
-@blueprint.route("/")
-def get_all():
-    ts = todos()
-    return json.dumps([t for t in ts], cls=EnhancedJSONEncoder)
-
-
-@blueprint.route("/", methods=["DELETE"])
-def delete_all():
-    ts = todos()
-    ts.clear()
-    return ""
-
-
-@blueprint.route("/", methods=["POST"])
-def post():
-    ts = todos()
-    todo = CreatedTodo.from_todo(Todo(**request.json))
-    ts.append(todo)
-    return todo.__dict__
-
-
-@blueprint.route("/<uuid:_id>", methods=["GET"])
-def get(_id):
-    todo = find_todo(_id)
-    return todo.__dict__ if todo else abort(404)
-
-
-@blueprint.route("/<uuid:_id>", methods=["PATCH"])
-def patch(_id):
-    todo = find_todo(_id)
-    if todo:
-        todo.apply_changes(TodoChanges(**request.json))
-        return todo.__dict__
-    return abort(404)
-
-
-@blueprint.route("/<uuid:_id>", methods=["DELETE"])
-def delete(_id):
-    todo = find_todo(_id)
-    if todo:
-        todos().remove(todo)
-    return ""
-
-
-def find_todo(_id):
-    matching_todos = [t for t in todos() if t.id == _id]
-    return matching_todos[0] if len(matching_todos) > 0 else None
-
-
-@dataclasses.dataclass
-class Todo:
+class Todo(BaseModel):
     title: str
-    order: int | None = None
+    order: Optional[int] = None
 
 
-@dataclasses.dataclass
-class CreatedTodo:
+class CreatedTodo(BaseModel):
     title: str
-    id: uuid.UUID = dataclasses.field(compare=False)
-    url: str = dataclasses.field(init=False, compare=False)
+    id: uuid.UUID
+    url: Optional[str] = None
     completed: bool = False
-    order: int | None = None
+    order: Optional[int] = None
 
-    def __post_init__(self):
+    def update_url(self):
         self.url = f"http://localhost:5000/{self.id}"
 
     @staticmethod
@@ -89,18 +30,77 @@ class CreatedTodo:
 
     @staticmethod
     def from_todo(todo):
-        return CreatedTodo(id=uuid.uuid4(), **todo.__dict__)
+        created = CreatedTodo(id=uuid.uuid4(), **todo.__dict__)
+        created.update_url()
+        return created
 
     def apply_changes(self, changes):
         for k, v in changes.__dict__.items():
             self.__dict__[k] = v if v else self.__dict__[k]
 
+    def __eq__(self, other):
+        ignore = ["id", "url"]
+        for k in vars(self).keys():
+            if k in ignore:
+                continue
+            if self.__dict__[k] != other.__dict__[k]:
+                return False
+        return True
 
-@dataclasses.dataclass
-class TodoChanges:
+
+class TodoChanges(BaseModel):
     title: str | None = None
     completed: bool | None = None
     order: int | None = None
+
+
+@app.get("/")
+def get_all():
+    ts = todos()
+    return ts
+
+
+@app.delete("/")
+def delete_all():
+    ts = todos()
+    ts.clear()
+
+
+@app.post("/")
+def post(todo: Todo):
+    ts = todos()
+    created = CreatedTodo.from_todo(todo)
+    ts.append(created)
+    return created.__dict__
+
+
+@app.get("/{_id}")
+def get(_id: uuid.UUID):
+    todo = find_todo(_id)
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo not found")
+    return todo.__dict__
+
+
+@app.patch("/{_id}")
+def patch(_id: uuid.UUID, todo_changes: TodoChanges):
+    todo = find_todo(_id)
+    if not todo:
+        raise HTTPException(status_code=404, detail="Todo not found")
+    todo.apply_changes(todo_changes)
+    return todo.__dict__
+
+
+@app.delete("/{_id}")
+def delete(_id: uuid.UUID):
+    todo = find_todo(_id)
+    if todo:
+        todos().remove(todo)
+
+
+def find_todo(_id):
+    matching_todos = [t for t in todos() if t.id == _id]
+    return matching_todos[0] if len(matching_todos) > 0 else None
 
 
 class EnhancedJSONEncoder(json.JSONEncoder):
@@ -112,10 +112,8 @@ class EnhancedJSONEncoder(json.JSONEncoder):
         return super().default(o)
 
 
-todosMap: Dict[Flask, List[CreatedTodo]] = {}
+todos_map: list[CreatedTodo] = []
 
 
 def todos() -> list[CreatedTodo]:
-    ts = todosMap[flask.current_app] if flask.current_app in todosMap else []
-    todosMap[flask.current_app] = ts
-    return ts
+    return todos_map

@@ -1,35 +1,21 @@
-import json
-
 import pytest
 
-import jqtodobackend.backend as backend
-from jqtodobackend import Todo, TodoChanges
-from jqtodobackend import CreatedTodo
+from jqtodobackend import Todo, TodoChanges, app as fastapi_app, CreatedTodo, todos
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture(autouse=True)
 def app():
-    app = backend.create_app()
-    app.config.update(
-        {
-            "TESTING": True,
-        }
-    )
-
-    # other setup can go here
-
     try:
-        yield app
+        yield fastapi_app
     finally:
-        t = backend.todosMap
+        t = todos()
         t and t.clear()
-
-    # clean up / reset resources here
 
 
 @pytest.fixture()
 def client(app):
-    c = app.test_client()
+    c = TestClient(app)
     return c
 
 
@@ -40,16 +26,15 @@ def runner(app):
 
 def test_to_todos_to_start_with(client):
     response = get_all(client)
-    j = json.loads(response.data)
+    j = response.json()
     assert len(j) == 0
 
 
 def test_a_posted_todo_is_returned(client):
     todo = Todo(title="a title")
     response = post(client, todo)
-    assert CreatedTodo.from_dict(json.loads(response.data)) == CreatedTodo.from_todo(
-        todo
-    )
+    t = response.json()
+    assert CreatedTodo.from_dict(t) == CreatedTodo.from_todo(todo)
 
 
 def test_posted_todos_are_added_to_the_list(client):
@@ -61,9 +46,7 @@ def test_posted_todos_are_added_to_the_list(client):
     response = get_all(client)
 
     expected = [CreatedTodo.from_todo(todo_a), CreatedTodo.from_todo(todo_b)]
-    assert [
-        CreatedTodo.from_dict(item) for item in json.loads(response.data)
-    ] == expected
+    assert [CreatedTodo.from_dict(item) for item in response.json()] == expected
 
 
 def test_list_is_empty_after_deletion(client):
@@ -76,13 +59,13 @@ def test_list_is_empty_after_deletion(client):
     response = get_all(client)
 
     expected = []
-    assert json.loads(response.data) == expected
+    assert response.json() == expected
 
 
 def test_a_todo_is_initially_not_completed(client):
     todo = Todo(title="a title")
     response = post(client, todo)
-    assert not json.loads(response.data)["completed"]
+    assert not response.json()["completed"]
 
 
 def test_a_created_todo_has_a_url_to_fetch_itself(client):
@@ -91,9 +74,7 @@ def test_a_created_todo_has_a_url_to_fetch_itself(client):
 
     response = client.get(url)
 
-    assert CreatedTodo.from_dict(json.loads(response.data)) == CreatedTodo.from_todo(
-        todo
-    )
+    assert CreatedTodo.from_dict(response.json()) == CreatedTodo.from_todo(todo)
 
 
 def test_a_created_todos_url_is_stored_in_the_list(client):
@@ -102,29 +83,30 @@ def test_a_created_todos_url_is_stored_in_the_list(client):
 
     response = get_all(client)
 
-    assert [t["url"] for t in json.loads(response.data)] == [url]
+    assert [t["url"] for t in response.json()] == [url]
 
 
 def test_a_todo_can_be_patched_to_change_its_title(client):
     todo = Todo(title="a title")
     url = extract_url(post(client, todo))
     todo_changes = TodoChanges(title="a different title")
-    client.patch(url, json=todo_changes)
+    patch(client, url, todo_changes)
+    patch(client, url, todo_changes)
 
     response = client.get(url)
 
-    assert json.loads(response.data)["title"] == "a different title"
+    assert response.json()["title"] == "a different title"
 
 
 def test_a_todo_can_be_patched_to_change_its_completeness(client):
     todo = Todo(title="a title")
     url = extract_url(post(client, todo))
     todo_changes = TodoChanges(completed=True)
-    client.patch(url, json=todo_changes)
+    patch(client, url, todo_changes)
 
     response = client.get(url)
 
-    assert json.loads(response.data)["completed"]
+    assert response.json()["completed"]
 
 
 def test_changes_to_todos_are_propagated_to_the_list(client):
@@ -134,12 +116,12 @@ def test_changes_to_todos_are_propagated_to_the_list(client):
     todo_changes_b = TodoChanges(completed=True)
     url_a = extract_url(post(client, todo_a))
     url_b = extract_url(post(client, todo_b))
-    client.patch(url_a, json=todo_changes_a)
-    client.patch(url_b, json=todo_changes_b)
+    patch(client, url_a, todo_changes_a)
+    patch(client, url_b, todo_changes_b)
 
     response = get_all(client)
 
-    assert [(t["title"], t["completed"]) for t in json.loads(response.data)] == [
+    assert [(t["title"], t["completed"]) for t in response.json()] == [
         ("new title a", True),
         ("title b", True),
     ]
@@ -152,7 +134,7 @@ def test_a_todo_can_be_removed_from_the_list_by_deleting_it(client):
 
     response = get_all(client)
 
-    assert json.loads(response.data) == []
+    assert response.json() == []
 
 
 def test_a_todo_cannot_be_retrieved_after_deleting_it(client):
@@ -171,17 +153,17 @@ def test_a_todo_can_have_an_initial_order(client):
 
     response = client.get(url)
 
-    assert json.loads(response.data)["order"] == 1
+    assert response.json()["order"] == 1
 
 
 def test_a_todo_change_be_patched_to_change_its_order(client):
     todo = Todo(title="a title", order=1)
     url = extract_url(post(client, todo))
-    client.patch(url, json=TodoChanges(order=2))
+    patch(client, url, TodoChanges(order=2))
 
     response = client.get(url)
 
-    assert json.loads(response.data)["order"] == 2
+    assert response.json()["order"] == 2
 
 
 def post(client, todo):
@@ -192,5 +174,9 @@ def get_all(client):
     return client.get("/")
 
 
+def patch(client, url, todo_changes):
+    return client.patch(url, json=todo_changes.__dict__)
+
+
 def extract_url(response):
-    return json.loads(response.data)["url"]
+    return response.json()["url"]
