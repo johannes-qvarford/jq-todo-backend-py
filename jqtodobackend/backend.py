@@ -18,29 +18,29 @@ def delete_all():
     ts.clear()
 
 
-@app.post("/")
+@app.post("/", response_model=CreatedTodo)
 def post(todo: Todo):
     ts = todos()
     created = CreatedTodo.from_todo(todo)
     ts.append(created)
-    return created.__dict__
+    return created
 
 
-@app.get("/{_id}")
+@app.get("/{_id}", response_model=CreatedTodo)
 def get(_id: uuid.UUID):
     todo = find_todo(_id)
     if not todo:
         raise HTTPException(status_code=404, detail="Todo not found")
-    return todo.__dict__
+    return todo
 
 
-@app.patch("/{_id}")
+@app.patch("/{_id}", response_model=CreatedTodo)
 def patch(_id: uuid.UUID, todo_changes: TodoChanges):
     todo = find_todo(_id)
     if not todo:
         raise HTTPException(status_code=404, detail="Todo not found")
     todo.apply_changes(todo_changes)
-    return todo.__dict__
+    return todo
 
 
 @app.delete("/{_id}")
