@@ -8,10 +8,10 @@ class Todo(BaseModel):
 
 
 class CreatedTodo(BaseModel):
-    title: str
     id: UUID
-    url: str | None = None
+    title: str
     completed: bool = False
+    url: str | None = None
     order: int | None = None
 
     def update_url(self):

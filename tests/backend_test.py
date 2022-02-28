@@ -1,8 +1,10 @@
+from contextlib import contextmanager
+
 import pytest
 
 from jqtodobackend.models import Todo, TodoChanges, CreatedTodo
-from jqtodobackend.db import todos
-from jqtodobackend.backend import app as fastapi_app
+from jqtodobackend.db import clear_todos
+from jqtodobackend.backend import app as fastapi_app, get_db
 from fastapi.testclient import TestClient
 
 
@@ -11,8 +13,8 @@ def app():
     try:
         yield fastapi_app
     finally:
-        t = todos()
-        t and t.clear()
+        with contextmanager(get_db)() as db:
+            clear_todos(db)
 
 
 @pytest.fixture()
@@ -92,7 +94,6 @@ def test_a_todo_can_be_patched_to_change_its_title(client):
     todo = Todo(title="a title")
     url = extract_url(post(client, todo))
     todo_changes = TodoChanges(title="a different title")
-    patch(client, url, todo_changes)
     patch(client, url, todo_changes)
 
     response = client.get(url)
@@ -177,7 +178,8 @@ def get_all(client):
 
 
 def patch(client, url, todo_changes):
-    return client.patch(url, json=todo_changes.__dict__)
+    response = client.patch(url, json=todo_changes.__dict__)
+    assert response.status_code == 200
 
 
 def extract_url(response):

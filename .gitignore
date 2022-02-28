@@ -143,3 +143,5 @@ poetry.xml
 vcs.xml
 modules.xml
 .name
+
+sql_app.db
