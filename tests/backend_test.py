@@ -1,6 +1,8 @@
 import pytest
 
-from jqtodobackend import Todo, TodoChanges, app as fastapi_app, CreatedTodo, todos
+from jqtodobackend.models import Todo, TodoChanges, CreatedTodo
+from jqtodobackend.db import todos
+from jqtodobackend.backend import app as fastapi_app
 from fastapi.testclient import TestClient
 
 
