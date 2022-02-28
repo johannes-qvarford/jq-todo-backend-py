@@ -1,7 +1,6 @@
 import dataclasses
 import json
 import uuid
-from typing import Optional
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -10,15 +9,15 @@ app = FastAPI()
 
 class Todo(BaseModel):
     title: str
-    order: Optional[int] = None
+    order: int | None = None
 
 
 class CreatedTodo(BaseModel):
     title: str
     id: uuid.UUID
-    url: Optional[str] = None
+    url: str | None = None
     completed: bool = False
-    order: Optional[int] = None
+    order: int | None = None
 
     def update_url(self):
         self.url = f"http://localhost:5000/{self.id}"
