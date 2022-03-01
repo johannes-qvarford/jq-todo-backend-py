@@ -37,7 +37,8 @@ class TodoRepository:
         return [row.as_created_todo for row in self.session.query(Todo).all()]
 
     def clear(self):
-        clear_todos(self.session)
+        self.session.query(Todo).delete()
+        self.session.commit()
 
     def insert(self, todo):
         insert_todo(self.session, todo)
