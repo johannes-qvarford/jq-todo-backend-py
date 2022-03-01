@@ -30,7 +30,7 @@ class MissingTodoQueryResult:
 
 
 class TodoRepository:
-    def __init__(self, session=Depends(get_db)):
+    def __init__(self, session: Session = Depends(get_db)):
         self.session = session
 
     def all(self):
@@ -40,8 +40,9 @@ class TodoRepository:
         self.session.query(Todo).delete()
         self.session.commit()
 
-    def insert(self, todo):
-        insert_todo(self.session, todo)
+    def insert(self, created: CreatedTodo):
+        self.session.add(Todo.from_created_todo(created))
+        self.session.commit()
 
     def find(self, _id):
         todo = find_todo(self.session, _id)

@@ -32,6 +32,12 @@ class Todo(Base):
         model.update_url()
         return model
 
+    @staticmethod
+    def from_created_todo(created):
+        schema = created.dict(exclude={"url"})
+        schema["id"] = str(schema["id"])
+        return Todo(**schema)
+
 
 Base.metadata.create_all(bind=engine)
 
