@@ -2,7 +2,7 @@
 name = "jq-todo-backend-py"
 version = "0.1.0"
 description = ""
-authors = ["Johannes Qvarford <johannes.qvarford@lynkco.com>"]
+authors = ["Johannes Qvarford <johannes.qvarford@nexergroup.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -18,3 +18,6 @@ mypy = "^0.931"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+plugins = "sqlalchemy.ext.mypy.plugin"

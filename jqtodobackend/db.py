@@ -1,4 +1,3 @@
-from typing import Any
 from uuid import UUID
 
 from sqlalchemy import create_engine, Column, String, Boolean, Integer
@@ -15,11 +14,7 @@ engine = create_engine(
     poolclass=StaticPool,
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-Base: Any = declarative_base()
-# registry = registry()
-# Base: Any = registry.generate_base()
+Base = declarative_base()
 
 
 class Todo(Base):
