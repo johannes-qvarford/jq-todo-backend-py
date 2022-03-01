@@ -4,8 +4,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from jqtodobackend.backend import app as fastapi_app
-from jqtodobackend.db import clear_todos, get_db
+from jqtodobackend.db import get_db
 from jqtodobackend.models import Todo, TodoChanges, CreatedTodo
+from jqtodobackend.repository import TodoRepository
 
 
 @pytest.fixture(autouse=True)
@@ -14,7 +15,8 @@ def app():
         yield fastapi_app
     finally:
         with contextmanager(get_db)() as db:
-            clear_todos(db)
+            repo = TodoRepository(db)
+            repo.clear()
 
 
 @pytest.fixture()

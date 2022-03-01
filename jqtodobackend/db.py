@@ -48,11 +48,6 @@ class Todo(Base):
 Base.metadata.create_all(bind=engine)
 
 
-def clear_todos(db: Session):
-    db.query(Todo).delete()
-    db.commit()
-
-
 def patch_todo(db: Session, _id: UUID, changes: TodoChanges):
     (
         db.query(Todo)
