@@ -17,7 +17,8 @@ class TodoQueryResult:
         patch_todo(self.session, self._todo.id, todo_changes)
 
     def delete(self):
-        remove_todo(self.session, self._todo.id)
+        self.session.query(Todo).filter_by(id=str(self._todo.id)).delete()
+        self.session.commit()
 
 
 class MissingTodoQueryResult:
