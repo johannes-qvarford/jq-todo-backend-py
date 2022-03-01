@@ -29,6 +29,9 @@ class MissingTodoQueryResult:
         pass
 
 
+MISSING_TODO_QUERY_RESULT = MissingTodoQueryResult()
+
+
 class TodoRepository:
     def __init__(self, session: Session = Depends(get_db)):
         self.session = session
@@ -52,7 +55,7 @@ class TodoRepository:
         return (
             TodoQueryResult(self.session, found_todos[0])
             if len(found_todos) > 0
-            else MissingTodoQueryResult()
+            else MISSING_TODO_QUERY_RESULT
         )
 
     def patch(self, _id, todo_changes):
