@@ -4,30 +4,22 @@ from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 
 from jqtodobackend.db import (
-    todos,
     find_todo,
     clear_todos,
     insert_todo,
-    SessionLocal,
     patch_todo,
     remove_todo,
+    get_db,
 )
 from jqtodobackend.models import Todo, CreatedTodo, TodoChanges
+from jqtodobackend.repository import TodoRepository
 
 app = FastAPI()
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
 @app.get("/")
-def get_all(db: Session = Depends(get_db)):
-    ts = todos(db)
+def get_all(repo: TodoRepository = Depends(TodoRepository)):
+    ts = repo.all()
     return ts
 
 
