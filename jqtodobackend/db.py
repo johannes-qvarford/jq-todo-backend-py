@@ -3,17 +3,23 @@ from uuid import UUID
 
 from sqlalchemy import create_engine, Column, String, Boolean, Integer
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
+from sqlalchemy.pool import StaticPool
 
 from jqtodobackend.models import CreatedTodo, TodoChanges
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
+SQLALCHEMY_DATABASE_URL = "sqlite://"
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}, echo=True
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    echo=True,
+    poolclass=StaticPool,
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 Base: Any = declarative_base()
+# registry = registry()
+# Base: Any = registry.generate_base()
 
 
 class Todo(Base):

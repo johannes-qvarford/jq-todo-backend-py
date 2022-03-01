@@ -1,11 +1,11 @@
 from contextlib import contextmanager
 
 import pytest
-
-from jqtodobackend.models import Todo, TodoChanges, CreatedTodo
-from jqtodobackend.db import clear_todos, get_db
-from jqtodobackend.backend import app as fastapi_app
 from fastapi.testclient import TestClient
+
+from jqtodobackend.backend import app as fastapi_app
+from jqtodobackend.db import clear_todos, get_db
+from jqtodobackend.models import Todo, TodoChanges, CreatedTodo
 
 
 @pytest.fixture(autouse=True)
