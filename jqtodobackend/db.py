@@ -2,10 +2,10 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import create_engine, Column, String, Boolean, Integer
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
+from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import StaticPool
 
-from jqtodobackend.models import CreatedTodo, TodoChanges
+from jqtodobackend.models import CreatedTodo
 
 SQLALCHEMY_DATABASE_URL = "sqlite://"
 engine = create_engine(
@@ -46,15 +46,6 @@ class Todo(Base):
 
 
 Base.metadata.create_all(bind=engine)
-
-
-def patch_todo(db: Session, _id: UUID, changes: TodoChanges):
-    (
-        db.query(Todo)
-        .filter_by(id=str(_id))
-        .update({k: v for k, v in changes if v is not None})
-    )
-    db.commit()
 
 
 def get_db():

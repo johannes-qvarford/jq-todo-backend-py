@@ -1,5 +1,6 @@
 from fastapi import Depends
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 
 from jqtodobackend.db import *
@@ -13,24 +14,11 @@ class TodoQueryResult:
     def as_http_response(self):
         return JSONResponse(jsonable_encoder(self._todo))
 
-    def patch(self, todo_changes):
-        patch_todo(self.session, self._todo.id, todo_changes)
-
-    def delete(self):
-        self.session.query(Todo).filter_by(id=str(self._todo.id)).delete()
-        self.session.commit()
-
 
 class MissingTodoQueryResult:
     @staticmethod
     def as_http_response():
         return JSONResponse(status_code=404, content={"detail": "Todo not found"})
-
-    def patch(self, *args, **kwargs):
-        pass
-
-    def delete(self, *args, **kwargs):
-        pass
 
 
 MISSING_TODO_QUERY_RESULT = MissingTodoQueryResult()
@@ -63,7 +51,13 @@ class TodoRepository:
         )
 
     def patch(self, _id, todo_changes):
-        self.find(_id).patch(todo_changes)
+        (
+            self.session.query(Todo)
+            .filter_by(id=str(_id))
+            .update({k: v for k, v in todo_changes if v is not None})
+        )
+        self.session.commit()
 
     def delete(self, _id):
-        self.find(_id).delete()
+        self.session.query(Todo).filter_by(id=str(_id)).delete()
+        self.session.commit()
