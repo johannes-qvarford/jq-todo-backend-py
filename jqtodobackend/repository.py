@@ -9,3 +9,9 @@ class TodoRepository:
 
     def all(self):
         return todos(self.session)
+
+    def clear(self):
+        clear_todos(self.session)
+
+    def insert(self, todo):
+        insert_todo(self.session, todo)

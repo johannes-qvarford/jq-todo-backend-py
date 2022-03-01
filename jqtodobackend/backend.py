@@ -5,8 +5,6 @@ from sqlalchemy.orm import Session
 
 from jqtodobackend.db import (
     find_todo,
-    clear_todos,
-    insert_todo,
     patch_todo,
     remove_todo,
     get_db,
@@ -24,14 +22,17 @@ def get_all(repo: TodoRepository = Depends(TodoRepository)):
 
 
 @app.delete("/")
-def delete_all(db: Session = Depends(get_db)):
-    clear_todos(db)
+def delete_all(repo: TodoRepository = Depends(TodoRepository)):
+    repo.clear()
 
 
 @app.post("/", response_model=CreatedTodo)
-def post(todo: Todo, db: Session = Depends(get_db)):
+def post(
+    todo: Todo,
+    repo: TodoRepository = Depends(TodoRepository),
+):
     created = CreatedTodo.from_todo(todo)
-    insert_todo(db, created)
+    repo.insert(created)
     return created
 
 
