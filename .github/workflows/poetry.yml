@@ -25,5 +25,5 @@ jobs:
         run: poetry run black --check .
       - name: Perform static type checking
         run: poetry run mypy .
-      - name: Perform tests
+      - name: Run tests
         run: poetry run pytest

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+cat >.git/hooks/pre-commit <<EOF
+#!/bin/bash
+echo Verifying formatting...
+poetry run black --check . || exit 1
+echo Performing static type checking...
+poetry run mypy . || exit 1
+echo Running tests...
+poetry run pytest || exit 1
+EOF
+chmod 755 .git/hooks/pre-commit
