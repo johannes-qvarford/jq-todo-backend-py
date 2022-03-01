@@ -45,10 +45,13 @@ class TodoRepository:
         self.session.commit()
 
     def find(self, _id):
-        todo = find_todo(self.session, _id)
+        found_todos = [
+            x.as_created_todo for x in self.session.query(Todo).filter_by(id=str(_id))
+        ]
+
         return (
-            TodoQueryResult(self.session, todo)
-            if todo is not None
+            TodoQueryResult(self.session, found_todos[0])
+            if len(found_todos) > 0
             else MissingTodoQueryResult()
         )
 
