@@ -29,12 +29,12 @@ def post(
     return created
 
 
-@app.get("/{_id}", response_model=CreatedTodo)
+@app.get("/{_id}")
 def get(
     _id: uuid.UUID,
     repo: TodoRepository = Depends(TodoRepository),
 ):
-    return repo.find(_id).as_successful_http_response_model()
+    return repo.find(_id).as_http_response()
 
 
 @app.patch("/{_id}")

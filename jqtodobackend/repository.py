@@ -1,4 +1,6 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends
+from fastapi.encoders import jsonable_encoder
+from starlette.responses import JSONResponse
 
 from jqtodobackend.db import *
 
@@ -8,8 +10,8 @@ class TodoQueryResult:
         self.session = session
         self._todo = todo
 
-    def as_successful_http_response_model(self):
-        return self._todo
+    def as_http_response(self):
+        return JSONResponse(jsonable_encoder(self._todo))
 
     def patch(self, todo_changes):
         patch_todo(self.session, self._todo.id, todo_changes)
@@ -19,8 +21,9 @@ class TodoQueryResult:
 
 
 class MissingTodoQueryResult:
-    def as_successful_http_response_model(self):
-        raise HTTPException(status_code=404, detail="Todo not found")
+    @staticmethod
+    def as_http_response():
+        return JSONResponse(status_code=404, content={"detail": "Todo not found"})
 
     def patch(self, *args, **kwargs):
         pass
