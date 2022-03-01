@@ -24,6 +24,14 @@ class Todo(Base):
     completed = Column(Boolean)
     order = Column(Integer, nullable=True)
 
+    @property
+    def as_created_todo(self):
+        d = dict(vars(self))
+        d["id"] = UUID(d["id"])
+        model = CreatedTodo(**d)
+        model.update_url()
+        return model
+
 
 Base.metadata.create_all(bind=engine)
 

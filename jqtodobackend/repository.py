@@ -34,7 +34,7 @@ class TodoRepository:
         self.session = session
 
     def all(self):
-        return todos(self.session)
+        return [row.as_created_todo for row in self.session.query(Todo).all()]
 
     def clear(self):
         clear_todos(self.session)
