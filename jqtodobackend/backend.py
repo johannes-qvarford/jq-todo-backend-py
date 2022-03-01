@@ -37,11 +37,11 @@ def post(
 
 
 @app.get("/{_id}", response_model=CreatedTodo)
-def get(_id: uuid.UUID, db: Session = Depends(get_db)):
-    todo = find_todo(db, _id)
-    if not todo:
-        raise HTTPException(status_code=404, detail="Todo not found")
-    return todo
+def get(
+    _id: uuid.UUID,
+    repo: TodoRepository = Depends(TodoRepository),
+):
+    return repo.find(_id).as_successful_http_response_model()
 
 
 @app.patch("/{_id}", response_model=CreatedTodo)
