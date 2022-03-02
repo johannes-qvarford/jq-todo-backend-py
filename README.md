@@ -28,7 +28,7 @@ Run the following to build and run the application in docker.
 
 > docker run -d --name jq-todo-backend -p 8080:8080 jq-todo-backend
 
-If you are running the app in WSL and want to access it from Windows, start it on the ip address for the ethernet device (eth0.inet from `ifconfig` command). You can use the same ip address+port when accessing from Windows.
+If you are running the app in WSL and want to access it from Windows, start it on the ip address for the ethernet device (eth0.inet from `ifconfig` command). You can use the same ip address+port when accessing from Windows. By default it is started with an embedded SQLite db - check the docker-compose.yml file for ideas on how to configure a different db.
 
 > poetry run uvicorn jqtodobackend.backend:app --host 172.23.59.68 --port 8080
 
