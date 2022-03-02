@@ -5,4 +5,3 @@
 * ✅ Create docker container.
 * ✅ Use PostgreSQL when not running tests
 * ✅ Document 404 etc. on OpenAPI docs.
-* Make it async

@@ -1,9 +1,10 @@
 from contextlib import contextmanager
+from typing import Any, List
+from fastapi import FastAPI
 
 import pytest
 
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
 
 from jqtodobackend.backend import app as fastapi_app
 from jqtodobackend.db import get_db
@@ -11,16 +12,26 @@ from jqtodobackend.models import Todo, TodoChanges, CreatedTodo
 from jqtodobackend.repository import TodoRepository
 
 
-class TodoClient(AsyncClient):
-    async def post_async(self, todo):
-        return await self.post("/", json=todo.__dict__)
+class TodoClient:
+    def __init__(self, app: FastAPI):
+        self._client = TestClient(app)
+        pass
 
-    async def get_all_async(self):
-        return await self.get("/")
+    def post(self, todo):
+        return self._client.post("/", json=todo.__dict__)
 
-    async def patch_async(self, url, todo_changes):
-        response = await self.patch(url, json=todo_changes.__dict__)
+    def get_all(self):
+        return self._client.get("/")
+
+    def patch(self, url, todo_changes):
+        response = self._client.patch(url, json=todo_changes.__dict__)
         assert response.status_code == 200
+
+    def delete(self, url):
+        return self._client.delete(url)
+
+    def get(self, url):
+        return self._client.get(url)
 
 
 @pytest.fixture(autouse=True)
@@ -41,7 +52,7 @@ def client(app):
 
 @pytest.fixture()
 def test_client(app):
-    return TodoClient(app=app, base_url="http://test")
+    return TodoClient(app=app)
 
 
 @pytest.fixture()
@@ -49,111 +60,101 @@ def runner(app):
     return app.test_cli_runner()
 
 
-@pytest.mark.anyio
-async def test_to_todos_to_start_with(test_client):
-    response = await test_client.get_all_async()
+def test_to_todos_to_start_with(test_client: TodoClient):
+    response = test_client.get_all()
     j = response.json()
     assert len(j) == 0
 
 
-@pytest.mark.anyio
-async def test_a_posted_todo_is_returned(test_client):
+def test_a_posted_todo_is_returned(test_client: TodoClient):
     todo = Todo(title="a title")
-    response = await test_client.post_async(todo)
+    response = test_client.post(todo)
     t = response.json()
     assert CreatedTodo.from_dict(t) == CreatedTodo.from_todo(todo)
 
 
-@pytest.mark.anyio
-async def test_posted_todos_are_added_to_the_list(test_client):
+def test_posted_todos_are_added_to_the_list(test_client: TodoClient):
     todo_a = Todo(title="a title")
     todo_b = Todo(title="a different_title")
-    await test_client.post_async(todo_a)
-    await test_client.post_async(todo_b)
+    test_client.post(todo_a)
+    test_client.post(todo_b)
 
-    response = await test_client.get_all_async()
+    response = test_client.get_all()
 
     expected = [CreatedTodo.from_todo(todo_a), CreatedTodo.from_todo(todo_b)]
     assert [CreatedTodo.from_dict(item) for item in response.json()] == expected
 
 
-@pytest.mark.anyio
-async def test_list_is_empty_after_deletion(test_client):
+def test_list_is_empty_after_deletion(test_client: TodoClient):
     todo_a = Todo(title="a title")
     todo_b = Todo(title="a different_title")
-    await test_client.post_async(todo_a)
-    await test_client.post_async(todo_b)
-    await test_client.delete("/")
+    test_client.post(todo_a)
+    test_client.post(todo_b)
+    test_client.delete("/")
 
-    response = await test_client.get_all_async()
+    response = test_client.get_all()
 
-    expected = []
+    expected: List[dict[str, Any]] = []
     assert response.json() == expected
 
 
-@pytest.mark.anyio
-async def test_a_todo_is_initially_not_completed(test_client):
+def test_a_todo_is_initially_not_completed(test_client: TodoClient):
     todo = Todo(title="a title")
-    response = await test_client.post_async(todo)
+    response = test_client.post(todo)
     assert not response.json()["completed"]
 
 
-@pytest.mark.anyio
-async def test_a_created_todo_has_a_url_to_fetch_itself(test_client):
+def test_a_created_todo_has_a_url_to_fetch_itself(test_client: TodoClient):
     todo = Todo(title="a title")
-    url = extract_url(await test_client.post_async(todo))
+    url = extract_url(test_client.post(todo))
 
-    response = await test_client.get(url)
+    response = test_client.get(url)
 
     assert CreatedTodo.from_dict(response.json()) == CreatedTodo.from_todo(todo)
 
 
-@pytest.mark.anyio
-async def test_a_created_todos_url_is_stored_in_the_list(test_client):
+def test_a_created_todos_url_is_stored_in_the_list(test_client: TodoClient):
     todo = Todo(title="a title")
-    url = extract_url(await test_client.post_async(todo))
+    url = extract_url(test_client.post(todo))
 
-    response = await test_client.get_all_async()
+    response = test_client.get_all()
 
     assert [t["url"] for t in response.json()] == [url]
 
 
-@pytest.mark.anyio
-async def test_a_todo_can_be_patched_to_change_its_title(test_client):
+def test_a_todo_can_be_patched_to_change_its_title(test_client: TodoClient):
     todo = Todo(title="a title")
-    url = extract_url(await test_client.post_async(todo))
+    url = extract_url(test_client.post(todo))
     todo_changes = TodoChanges(title="a different title")
-    await test_client.patch_async(url, todo_changes)
+    test_client.patch(url, todo_changes)
 
-    response = await test_client.get(url)
+    response = test_client.get(url)
 
     assert response.json()["title"] == "a different title"
 
 
-@pytest.mark.anyio
-async def test_a_todo_can_be_patched_to_change_its_completeness(test_client):
+def test_a_todo_can_be_patched_to_change_its_completeness(test_client: TodoClient):
     todo = Todo(title="a title")
-    url = extract_url(await test_client.post_async(todo))
+    url = extract_url(test_client.post(todo))
     todo_changes = TodoChanges(completed=True)
-    await test_client.patch_async(url, todo_changes)
+    test_client.patch(url, todo_changes)
 
-    response = await test_client.get(url)
+    response = test_client.get(url)
 
     assert response.json()["completed"]
 
 
-@pytest.mark.anyio
-async def test_changes_to_todos_are_propagated_to_the_list(test_client):
+def test_changes_to_todos_are_propagated_to_the_list(test_client: TodoClient):
     todo_a = Todo(title="title a")
     todo_b = Todo(title="title b")
     todo_changes_a = TodoChanges(title="new title a", completed=True)
     todo_changes_b = TodoChanges(completed=True)
-    url_a = extract_url(await test_client.post_async(todo_a))
-    url_b = extract_url(await test_client.post_async(todo_b))
-    await test_client.patch_async(url_a, todo_changes_a)
-    await test_client.patch_async(url_b, todo_changes_b)
+    url_a = extract_url(test_client.post(todo_a))
+    url_b = extract_url(test_client.post(todo_b))
+    test_client.patch(url_a, todo_changes_a)
+    test_client.patch(url_b, todo_changes_b)
 
-    response = await test_client.get_all_async()
+    response = test_client.get_all()
 
     assert [(t["title"], t["completed"]) for t in response.json()] == [
         ("new title a", True),
@@ -161,45 +162,41 @@ async def test_changes_to_todos_are_propagated_to_the_list(test_client):
     ]
 
 
-@pytest.mark.anyio
-async def test_a_todo_can_be_removed_from_the_list_by_deleting_it(test_client):
+def test_a_todo_can_be_removed_from_the_list_by_deleting_it(test_client: TodoClient):
     todo = Todo(title="a title")
-    url = extract_url(await test_client.post_async(todo))
-    await test_client.delete(url)
+    url = extract_url(test_client.post(todo))
+    test_client.delete(url)
 
-    response = await test_client.get_all_async()
+    response = test_client.get_all()
 
     assert response.json() == []
 
 
-@pytest.mark.anyio
-async def test_a_todo_cannot_be_retrieved_after_deleting_it(test_client):
+def test_a_todo_cannot_be_retrieved_after_deleting_it(test_client: TodoClient):
     todo = Todo(title="a title")
-    url = extract_url(await test_client.post_async(todo))
-    await test_client.delete(url)
+    url = extract_url(test_client.post(todo))
+    test_client.delete(url)
 
-    response = await test_client.get(url)
+    response = test_client.get(url)
 
     assert response.status_code == 404
 
 
-@pytest.mark.anyio
-async def test_a_todo_can_have_an_initial_order(test_client):
+def test_a_todo_can_have_an_initial_order(test_client: TodoClient):
     todo = Todo(title="a title", order=1)
-    url = extract_url(await test_client.post_async(todo))
+    url = extract_url(test_client.post(todo))
 
-    response = await test_client.get(url)
+    response = test_client.get(url)
 
     assert response.json()["order"] == 1
 
 
-@pytest.mark.anyio
-async def test_a_todo_can_be_patched_to_change_its_order(test_client):
+def test_a_todo_can_be_patched_to_change_its_order(test_client: TodoClient):
     todo = Todo(title="a title", order=1)
-    url = extract_url(await test_client.post_async(todo))
-    await test_client.patch_async(url, TodoChanges(order=2))
+    url = extract_url(test_client.post(todo))
+    test_client.patch(url, TodoChanges(order=2))
 
-    response = await test_client.get(url)
+    response = test_client.get(url)
 
     assert response.json()["order"] == 2
 
