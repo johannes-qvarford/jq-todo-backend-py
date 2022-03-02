@@ -22,4 +22,10 @@ Initialize project using:
 
 Check the install-pre-commit file for how to run formatting, static type checking and testing.
 
+Run the following to build and run the application in docker.
+
+> docker build -t jq-todo-backend .
+
+> docker run -d --name jq-todo-backend -p 8080:8080 jq-todo-backend
+
 Follow [this article](https://marcobelo.medium.com/setting-up-python-black-on-visual-studio-code-5318eba4cd00) on how to install formatting on save in vsc using black.
