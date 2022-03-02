@@ -7,21 +7,17 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import StaticPool
 
 from jqtodobackend.models import CreatedTodo
+from jqtodobackend.settings import settings
 
-CONNECT_ARGS = (
-    environ["DB_ARGS"] if "DB_ARGS" in environ else '{"check_same_thread": false}'
-)
-SQLALCHEMY_DATABASE_URL = environ["DB_URL"] if "DB_URL" in environ else "sqlite://"
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args=json.loads(CONNECT_ARGS),
+    settings.db_url,
+    connect_args=json.loads(settings.db_args),
     echo=True,
     poolclass=StaticPool,
     future=True,
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-# postgresql://postgres:postgres@db/postgres
 
 
 class Todo(Base):
