@@ -8,7 +8,6 @@ from sqlalchemy.pool import StaticPool
 
 from jqtodobackend.models import CreatedTodo
 
-print(environ)
 CONNECT_ARGS = (
     environ["DB_ARGS"] if "DB_ARGS" in environ else '{"check_same_thread": false}'
 )
