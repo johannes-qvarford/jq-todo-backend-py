@@ -5,6 +5,8 @@ ENV POETRY_VERSION=1.1.13 ENV=${ENV}
 
 WORKDIR /code
 
+COPY wait-for-it.sh /code/
+
 COPY poetry.lock pyproject.toml /code/
 
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -

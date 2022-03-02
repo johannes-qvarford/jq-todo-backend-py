@@ -3,7 +3,6 @@
 * * ✅ Integrate pytest with VSC
 * * ✅ Run black on file save
 * ✅ Create docker container.
-* Use PostgreSQL when not running tests
+* ✅ Use PostgreSQL when not running tests
 * Document 404 etc. on OpenAPI docs.
-* Actually make sure that you can run this thing, not just in tests.
 * Make it async
