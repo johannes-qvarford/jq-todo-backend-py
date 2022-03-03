@@ -5,12 +5,12 @@ from sqlalchemy import insert, select, update, delete
 from sqlalchemy.engine import Connection, Row
 from sqlalchemy.ext.asyncio.engine import AsyncConnection
 from starlette.responses import JSONResponse
-from jqtodobackend.db import TTodo, get_db2
+from jqtodobackend.db import TTodo, get_connection
 
 from jqtodobackend.models import CreatedTodo
 
 
-def as_created_todo(self: dict):
+def _as_created_todo(self: dict):
     d = dict(self)
     d["id"] = UUID(d["id"])
     model = CreatedTodo(**d)
@@ -18,7 +18,7 @@ def as_created_todo(self: dict):
     return model
 
 
-def from_created_todo(created) -> dict:
+def _from_created_todo(created) -> dict:
     schema = created.dict(exclude={"url"})
     schema["id"] = str(schema["id"])
     return schema
@@ -35,7 +35,7 @@ class TodoQueryResult:
         self._todo = todo
 
     def as_http_response(self):
-        return JSONResponse(jsonable_encoder(as_created_todo(self._todo._mapping)))
+        return JSONResponse(jsonable_encoder(_as_created_todo(self._todo._mapping)))
 
 
 class MissingTodoQueryResult:
@@ -48,12 +48,12 @@ MISSING_TODO_QUERY_RESULT = MissingTodoQueryResult()
 
 
 class TodoRepository:
-    def __init__(self, connection: Connection = Depends(get_db2)):
+    def __init__(self, connection: Connection = Depends(get_connection)):
         self.connection = connection
 
     def all(self):
         conn = self.connection
-        return [as_created_todo(row._mapping) for row in conn.execute(select(TTodo))]
+        return [_as_created_todo(row._mapping) for row in conn.execute(select(TTodo))]
 
     def clear(self):
         conn = self.connection
@@ -63,7 +63,7 @@ class TodoRepository:
     def insert(self, created: CreatedTodo):
         conn = self.connection
         with conn.begin():
-            conn.execute(insert(TTodo).values(**from_created_todo(created)))
+            conn.execute(insert(TTodo).values(**_from_created_todo(created)))
 
     def find(self, _id):
         conn = self.connection

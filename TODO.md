@@ -5,3 +5,6 @@
 * ✅ Create docker container.
 * ✅ Use PostgreSQL when not running tests
 * ✅ Document 404 etc. on OpenAPI docs.
+* ✅ Use SqlAlchemy Core over ORM
+* ✅ Make db startup errors not prevent test collection process.
+* Test repository itself

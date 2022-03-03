@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from jqtodobackend.backend import app as fastapi_app
-from jqtodobackend.db import get_db2
+from jqtodobackend.db import get_connection, get_engine
 from jqtodobackend.models import Todo, TodoChanges, CreatedTodo
 from jqtodobackend.repository import TodoRepository
 
@@ -39,8 +39,8 @@ def app():
     try:
         yield fastapi_app
     finally:
-        with contextmanager(get_db2)() as db2:
-            repo = TodoRepository(db2)
+        for connection in get_connection(get_engine()):
+            repo = TodoRepository(connection)
             repo.clear()
 
 
