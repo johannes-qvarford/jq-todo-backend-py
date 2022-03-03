@@ -1,29 +1,41 @@
+from uuid import UUID
 from fastapi import Depends
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select, update, delete
-from sqlalchemy.orm import Session
+from sqlalchemy import insert, select, update, delete
+from sqlalchemy.engine import Connection, Row
+from sqlalchemy.ext.asyncio.engine import AsyncConnection
 from starlette.responses import JSONResponse
+from jqtodobackend.db import TTodo, get_db2
 
-from jqtodobackend.db import *
+from jqtodobackend.models import CreatedTodo
+
+
+def as_created_todo(self: dict):
+    d = dict(self)
+    d["id"] = UUID(d["id"])
+    model = CreatedTodo(**d)
+    model.update_url()
+    return model
+
+
+def from_created_todo(created) -> dict:
+    schema = created.dict(exclude={"url"})
+    schema["id"] = str(schema["id"])
+    return schema
 
 
 class QueryResult:
     @staticmethod
-    def of(session, obj: Todo | None):
-        return (
-            TodoQueryResult(session, obj)
-            if obj is not None
-            else MISSING_TODO_QUERY_RESULT
-        )
+    def of(obj: Row | None):
+        return TodoQueryResult(obj) if obj is not None else MISSING_TODO_QUERY_RESULT
 
 
 class TodoQueryResult:
-    def __init__(self, session, todo: Todo):
-        self.session = session
+    def __init__(self, todo):
         self._todo = todo
 
     def as_http_response(self):
-        return JSONResponse(jsonable_encoder(self._todo.as_created_todo))
+        return JSONResponse(jsonable_encoder(as_created_todo(self._todo._mapping)))
 
 
 class MissingTodoQueryResult:
@@ -36,36 +48,38 @@ MISSING_TODO_QUERY_RESULT = MissingTodoQueryResult()
 
 
 class TodoRepository:
-    def __init__(self, session: Session = Depends(get_db)):
-        self.session = session
+    def __init__(self, connection: Connection = Depends(get_db2)):
+        self.connection = connection
 
     def all(self):
-        return [
-            row.as_created_todo
-            for row in self.session.execute(select(Todo)).scalars().all()
-        ]
+        conn = self.connection
+        return [as_created_todo(row._mapping) for row in conn.execute(select(TTodo))]
 
     def clear(self):
-        self.session.query(Todo).delete()
-        self.session.commit()
+        conn = self.connection
+        with conn.begin():
+            conn.execute(delete(TTodo))
 
     def insert(self, created: CreatedTodo):
-        self.session.add(Todo.from_created_todo(created))
-        self.session.commit()
+        conn = self.connection
+        with conn.begin():
+            conn.execute(insert(TTodo).values(**from_created_todo(created)))
 
     def find(self, _id):
-        return QueryResult.of(
-            session=self.session, obj=self.session.get(Todo, str(_id))
-        )
+        conn = self.connection
+        obj = conn.execute(select(TTodo).where(TTodo.c.id == str(_id))).first()
+        return QueryResult.of(obj)
 
     def patch(self, _id, todo_changes):
-        self.session.execute(
-            update(Todo)
-            .where(Todo.id == str(_id))
-            .values(**{k: v for k, v in todo_changes if v is not None})
-        )
-        self.session.commit()
+        conn = self.connection
+        with conn.begin():
+            conn.execute(
+                update(TTodo)
+                .where(TTodo.c.id == str(_id))
+                .values(**{k: v for k, v in todo_changes if v is not None})
+            )
 
     def delete(self, _id):
-        self.session.execute(delete(Todo).where(Todo.id == str(_id)))
-        self.session.commit()
+        conn = self.connection
+        with conn.begin():
+            conn.execute(delete(TTodo).where(TTodo.c.id == str(_id)))

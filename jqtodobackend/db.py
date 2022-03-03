@@ -1,12 +1,9 @@
 import json
-from uuid import UUID
-from os import environ
 
-from sqlalchemy import create_engine, Column, String, Boolean, Integer
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy import MetaData, Table, create_engine, Column, String, Boolean, Integer
 from sqlalchemy.pool import StaticPool
+from sqlalchemy.ext.asyncio import create_async_engine
 
-from jqtodobackend.models import CreatedTodo
 from jqtodobackend.settings import settings
 
 engine = create_engine(
@@ -16,39 +13,26 @@ engine = create_engine(
     poolclass=StaticPool,
     future=True,
 )
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+
+metadata_obj = MetaData()
+
+TTodo = Table(
+    "todos",
+    metadata_obj,
+    Column("id", String, primary_key=True, index=True),
+    Column("title", String),
+    Column("completed", Boolean),
+    Column("order", Integer, nullable=True),
+)
+
+metadata_obj.create_all(engine)
 
 
-class Todo(Base):
-    __tablename__ = "todos"
+def get_db2():
 
-    id = Column(String, primary_key=True, index=True)
-    title = Column(String)
-    completed = Column(Boolean)
-    order = Column(Integer, nullable=True)
-
-    @property
-    def as_created_todo(self):
-        d = dict(vars(self))
-        d["id"] = UUID(d["id"])
-        model = CreatedTodo(**d)
-        model.update_url()
-        return model
-
-    @staticmethod
-    def from_created_todo(created):
-        schema = created.dict(exclude={"url"})
-        schema["id"] = str(schema["id"])
-        return Todo(**schema)
-
-
-Base.metadata.create_all(bind=engine)
-
-
-def get_db():
-    db = SessionLocal()
     try:
-        yield db
+        with engine.connect() as conn:
+            yield conn
     finally:
-        db.close()
+        if conn is not None:
+            conn.close()

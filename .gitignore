@@ -146,4 +146,4 @@ modules.xml
 codeStyleConfig.xml
 Project.xml
 
-sql_app.db
+*.db
